@@ -1,6 +1,6 @@
 /** Menu + validation only — keeps the first paint bundle small (no full label lists). */
 
-export type AlbumBackground = 'panini' | 'default';
+export type AlbumBackground = 'default';
 
 export type ItemLabels = { singular: string; plural: string };
 
@@ -24,7 +24,7 @@ export const ALBUM_MENU: readonly AlbumMenuDefinition[] = [
     shortName: 'WC 2026 Stickers',
     fullName: 'FIFA World Cup 2026™ Official Stickers',
     slotCount: 960,
-    background: 'panini',
+    background: 'default',
     searchPlaceholder: 'Try: FWC 1, BRA 20…',
     itemLabels: STICKER,
   },
