@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { Button, Card, CardHeader, Container, Divider, Input, Pill } from '../components/ui';
 import { getAlbumById } from '../data/albums';
@@ -6,6 +6,53 @@ import { shareText } from '../lib/share';
 import { loadSelectedAlbumId, loadStickerRows, persistStickerRows, type StickerRow } from '../lib/stickerStorage';
 
 type Filter = 'all' | 'missing' | 'owned' | 'duplicates';
+
+const LONG_PRESS_MS = 420;
+
+const StickerGridCell = memo(function StickerGridCell({
+  id,
+  label,
+  count,
+  onCellClick,
+  onCellPointerDown,
+  onCellPointerEnd,
+}: {
+  id: number;
+  label: string;
+  count: number;
+  onCellClick: (id: number) => void;
+  onCellPointerDown: (id: number) => void;
+  onCellPointerEnd: (id: number) => void;
+}) {
+  const tone =
+    count === 0
+      ? 'border-slate-300 bg-slate-100 text-slate-700'
+      : count === 1
+        ? 'border-[#16a34a] bg-[#bbf7d0] text-slate-900 shadow-[0_3px_12px_rgba(22,163,74,0.2)]'
+        : 'border-[#2563eb] bg-[#bfdbfe] text-slate-900 shadow-[0_3px_12px_rgba(37,99,235,0.22)]';
+
+  return (
+    <button
+      type="button"
+      onClick={() => onCellClick(id)}
+      onPointerDown={() => onCellPointerDown(id)}
+      onPointerUp={() => onCellPointerEnd(id)}
+      onPointerCancel={() => onCellPointerEnd(id)}
+      onPointerLeave={() => onCellPointerEnd(id)}
+      onContextMenu={(e) => e.preventDefault()}
+      title="Click: +1 • Hold: -1 • Right-click disabled"
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '48px 48px' }}
+      className={`focus-ring relative flex min-h-12 touch-manipulation select-none items-center justify-center rounded-xl border-2 text-[10px] font-extrabold leading-tight tracking-tight shadow-sm transition-[filter,box-shadow] duration-75 active:brightness-[0.94] sm:h-12 sm:text-[11px] ${tone}`}
+    >
+      <div className="px-2 text-center opacity-95">{label}</div>
+      {count > 1 ? (
+        <div className="absolute right-1 top-1 grid h-5 min-w-5 place-items-center rounded-full border-2 border-[#e30613] bg-[#ffd700] px-1 text-[10px] font-extrabold text-slate-900 shadow-sm">
+          {count - 1}
+        </div>
+      ) : null}
+    </button>
+  );
+});
 
 function percent(n: number) {
   if (!Number.isFinite(n)) return 0;
@@ -59,26 +106,55 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
     });
   }, [stickers, search, filter]);
 
-  const handlePress = (item: StickerRow) => {
+  const bumpCount = useCallback((id: number, delta: 1 | -1) => {
     setStickers((prev) => {
       const updated = [...prev];
-      const index = updated.findIndex((s) => s.id === item.id);
-      if (index !== -1) updated[index] = { ...updated[index], count: updated[index].count + 1 };
+      const index = updated.findIndex((s) => s.id === id);
+      if (index === -1) return prev;
+      const next = Math.max(0, updated[index].count + delta);
+      updated[index] = { ...updated[index], count: next };
       return updated;
     });
-  };
+  }, []);
 
-  const handleDecrement = (item: StickerRow) => {
-    setStickers((prev) => {
-      const updated = [...prev];
-      const index = updated.findIndex((s) => s.id === item.id);
-      if (index !== -1) {
-        const next = Math.max(0, updated[index].count - 1);
-        updated[index] = { ...updated[index], count: next };
+  const clearLongPressTimer = useCallback((id: number) => {
+    const t = longPressTimersRef.current.get(id);
+    if (t !== undefined) {
+      window.clearTimeout(t);
+      longPressTimersRef.current.delete(id);
+    }
+  }, []);
+
+  const onCellPointerDown = useCallback(
+    (id: number) => {
+      clearLongPressTimer(id);
+      const timeoutId = window.setTimeout(() => {
+        longPressTimersRef.current.delete(id);
+        longPressConsumeClickRef.current = id;
+        bumpCount(id, -1);
+      }, LONG_PRESS_MS);
+      longPressTimersRef.current.set(id, timeoutId);
+    },
+    [bumpCount, clearLongPressTimer],
+  );
+
+  const onCellPointerEnd = useCallback(
+    (id: number) => {
+      clearLongPressTimer(id);
+    },
+    [clearLongPressTimer],
+  );
+
+  const onCellClick = useCallback(
+    (id: number) => {
+      if (longPressConsumeClickRef.current === id) {
+        longPressConsumeClickRef.current = null;
+        return;
       }
-      return updated;
-    });
-  };
+      bumpCount(id, 1);
+    },
+    [bumpCount],
+  );
 
   const confirmClearAll = () => {
     const reset = stickers.map((s) => ({ ...s, count: 0 }));
@@ -186,74 +262,17 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
 
         <div className="p-4 sm:p-6">
           <div className="grid grid-cols-7 gap-2 sm:gap-2.5">
-            {filtered.map((item) => {
-              const tone =
-                item.count === 0
-                  ? 'border-slate-300 bg-slate-100 text-slate-700'
-                  : item.count === 1
-                    ? 'border-[#16a34a] bg-[#bbf7d0] text-slate-900 shadow-[0_3px_12px_rgba(22,163,74,0.2)]'
-                    : 'border-[#2563eb] bg-[#bfdbfe] text-slate-900 shadow-[0_3px_12px_rgba(37,99,235,0.22)]';
-
-              const longPressMs = 420;
-
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    if (longPressConsumeClickRef.current === item.id) {
-                      longPressConsumeClickRef.current = null;
-                      return;
-                    }
-                    handlePress(item);
-                  }}
-                  onPointerDown={() => {
-                    const id = item.id;
-                    const prev = longPressTimersRef.current.get(id);
-                    if (prev !== undefined) window.clearTimeout(prev);
-
-                    const timeoutId = window.setTimeout(() => {
-                      longPressTimersRef.current.delete(id);
-                      longPressConsumeClickRef.current = id;
-                      handleDecrement(item);
-                    }, longPressMs);
-
-                    longPressTimersRef.current.set(id, timeoutId);
-                  }}
-                  onPointerUp={() => {
-                    const t = longPressTimersRef.current.get(item.id);
-                    if (t !== undefined) {
-                      window.clearTimeout(t);
-                      longPressTimersRef.current.delete(item.id);
-                    }
-                  }}
-                  onPointerCancel={() => {
-                    const t = longPressTimersRef.current.get(item.id);
-                    if (t !== undefined) {
-                      window.clearTimeout(t);
-                      longPressTimersRef.current.delete(item.id);
-                    }
-                  }}
-                  onPointerLeave={() => {
-                    const t = longPressTimersRef.current.get(item.id);
-                    if (t !== undefined) {
-                      window.clearTimeout(t);
-                      longPressTimersRef.current.delete(item.id);
-                    }
-                  }}
-                  onContextMenu={(e) => e.preventDefault()}
-                  title="Click: +1 • Hold: -1 • Right-click disabled"
-                  className={`focus-ring group relative flex min-h-12 touch-manipulation select-none items-center justify-center rounded-xl border-2 text-[10px] font-extrabold leading-tight tracking-tight transition active:scale-[0.97] shadow-sm sm:h-12 sm:text-[11px] sm:active:scale-100 sm:hover:translate-y-[-1px] ${tone}`}
-                >
-                  <div className="px-2 text-center opacity-95">{item.label}</div>
-                  {item.count > 1 ? (
-                    <div className="absolute right-1 top-1 grid h-5 min-w-5 place-items-center rounded-full border-2 border-[#e30613] bg-[#ffd700] px-1 text-[10px] font-extrabold text-slate-900 shadow-sm">
-                      {item.count - 1}
-                    </div>
-                  ) : null}
-                </button>
-              );
-            })}
+            {filtered.map((item) => (
+              <StickerGridCell
+                key={item.id}
+                id={item.id}
+                label={item.label}
+                count={item.count}
+                onCellClick={onCellClick}
+                onCellPointerDown={onCellPointerDown}
+                onCellPointerEnd={onCellPointerEnd}
+              />
+            ))}
           </div>
 
           {filtered.length === 0 ? (

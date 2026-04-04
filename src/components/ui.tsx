@@ -39,7 +39,7 @@ export function Button({
   selected?: boolean;
 }) {
   const base =
-    'focus-ring inline-flex min-h-11 min-w-[44px] touch-manipulation items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold backdrop-blur-md transition active:scale-[0.98] disabled:opacity-45 disabled:cursor-not-allowed sm:active:scale-100 sm:active:translate-y-px';
+    'focus-ring inline-flex min-h-11 min-w-[44px] touch-manipulation items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold backdrop-blur-md transition-[filter,opacity] duration-100 active:brightness-[0.96] disabled:opacity-45 disabled:cursor-not-allowed';
 
   const styles: Record<string, string> = {
     primary:
@@ -102,7 +102,7 @@ export function Pill({
     <button
       type="button"
       onClick={onClick}
-      className={`focus-ring min-h-11 w-full touch-manipulation rounded-full px-4 py-2.5 text-sm font-bold tracking-tight transition active:scale-[0.97] sm:w-auto sm:px-5 sm:active:scale-100 ${activeStyles} ${className}`}
+      className={`focus-ring min-h-11 w-full touch-manipulation rounded-full px-4 py-2.5 text-sm font-bold tracking-tight transition-[filter,opacity] duration-100 active:brightness-[0.96] sm:w-auto sm:px-5 ${activeStyles} ${className}`}
     >
       {children}
     </button>

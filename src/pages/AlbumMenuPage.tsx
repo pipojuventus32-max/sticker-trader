@@ -17,7 +17,7 @@ function AlbumCard({
     <button
       type="button"
       onClick={onSelect}
-      className="focus-ring group w-full rounded-2xl border-2 border-slate-200/90 bg-white/80 p-4 text-left shadow-inner shadow-slate-200/60 transition hover:border-[#00a99d]/50 hover:bg-white hover:shadow-[0_8px_28px_rgba(15,23,42,0.08)] active:scale-[0.99] sm:p-5"
+      className="focus-ring group w-full rounded-2xl border-2 border-slate-200/90 bg-white/80 p-4 text-left shadow-inner shadow-slate-200/60 transition-[border-color,background-color,box-shadow,filter] duration-150 hover:border-[#00a99d]/50 hover:bg-white hover:shadow-[0_8px_28px_rgba(15,23,42,0.08)] active:brightness-[0.97] sm:p-5"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
