@@ -1,16 +1,9 @@
-import {
-  ALBUMS,
-  catalogRowsForAlbum,
-  DEFAULT_ALBUM_ID,
-  getAlbumById,
-  type AlbumDefinition,
-} from '../data/albums';
+import { catalogRowsForAlbum } from '../data/albums';
 
 export type StickerRow = { id: number; label: string; count: number };
 
 const STORAGE_MULTI = 'sticker-tracker:multi:v1';
 const STORAGE_LEGACY_V2 = 'sticker-tracker:counts:v2';
-const SELECTED_KEY = 'sticker-tracker:selected-album:v1';
 
 type MultiStore = {
   albums: Record<string, Record<string, number>>;
@@ -68,25 +61,6 @@ function writeStore(store: MultiStore): void {
   }
 }
 
-export function loadSelectedAlbumId(): string {
-  try {
-    const id = localStorage.getItem(SELECTED_KEY);
-    if (id && getAlbumById(id)) return id;
-  } catch {
-    /* */
-  }
-  return DEFAULT_ALBUM_ID;
-}
-
-export function persistSelectedAlbumId(albumId: string): void {
-  if (!getAlbumById(albumId)) return;
-  try {
-    localStorage.setItem(SELECTED_KEY, albumId);
-  } catch {
-    /* */
-  }
-}
-
 export function loadStickerRows(albumId: string): StickerRow[] {
   const baseTemplates = catalogRowsForAlbum(albumId);
   if (baseTemplates.length === 0) return [];
@@ -109,8 +83,4 @@ export function persistStickerRows(albumId: string, rows: StickerRow[]): void {
   for (const r of rows) map[String(r.id)] = r.count;
   store.albums[albumId] = map;
   writeStore(store);
-}
-
-export function listAlbums(): readonly AlbumDefinition[] {
-  return ALBUMS;
 }

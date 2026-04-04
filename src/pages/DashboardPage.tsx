@@ -2,8 +2,9 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 
 import { Button, Card, CardHeader, Container, Divider, Input, Pill } from '../components/ui';
 import { getAlbumById } from '../data/albums';
+import { loadSelectedAlbumId } from '../lib/albumSelection';
 import { shareText } from '../lib/share';
-import { loadSelectedAlbumId, loadStickerRows, persistStickerRows, type StickerRow } from '../lib/stickerStorage';
+import { loadStickerRows, persistStickerRows, type StickerRow } from '../lib/stickerStorage';
 
 type Filter = 'all' | 'missing' | 'owned' | 'duplicates';
 
