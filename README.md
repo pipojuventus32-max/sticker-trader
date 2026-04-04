@@ -1,3 +1,21 @@
+# Sticker Trader (Web)
+
+This is the web frontend built with **React + Vite + TypeScript**.
+
+## Local development
+
+```bash
+npm install
+npm run dev
+```
+
+## Build
+
+```bash
+npm run build
+npm run preview
+```
+
 # Welcome to your Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
