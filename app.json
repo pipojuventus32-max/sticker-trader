@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "sticker-trader",
-    "slug": "sticker-trader",
+    "name": "Sticker Tracker",
+    "slug": "sticker-tracker",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "stickertrader",
+    "scheme": "stickertracker",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

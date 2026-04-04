@@ -40,7 +40,7 @@ export default function AlbumMenuPage({ onSelectAlbum }: { onSelectAlbum: (album
   return (
     <Container>
       <div className="mb-6 text-center sm:mb-8">
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">Sticker Trader</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">Sticker Tracker</h1>
         <p className="mt-2 text-sm text-slate-600 sm:text-base">Choose an album to track your collection.</p>
       </div>
 

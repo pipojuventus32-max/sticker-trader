@@ -1,4 +1,4 @@
-# Sticker Trader (Web)
+# Sticker Tracker (Web)
 
 This is the web frontend built with **React + Vite + TypeScript**.
 
