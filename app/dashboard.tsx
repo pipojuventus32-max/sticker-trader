@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
 import { Alert, FlatList, Platform, Share, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -67,7 +66,7 @@ export default function Dashboard() {
 
     const timeout = setTimeout(() => {
       save(stickers);
-    }, 500);
+    }, 1000);
 
     return () => clearTimeout(timeout);
   }, [stickers]);
@@ -80,22 +79,32 @@ export default function Dashboard() {
 
   // TAP = +1
   const handlePress = (item: any) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-
-    setStickers(prev =>
-      prev.map(s =>
-        s.id === item.id ? { ...s, count: s.count + 1 } : s
-      )
-    );
+    setStickers(prev => {
+      const updated = [...prev];
+      const index = updated.findIndex(s => s.id === item.id);
+      if (index !== -1) {
+        updated[index] = {
+          ...updated[index],
+          count: updated[index].count + 1
+        };
+      }
+      return updated;
+    });
   };
 
   // LONG PRESS = RESET
   const handleLongPress = (item: any) => {
-    setStickers(prev =>
-      prev.map(s =>
-        s.id === item.id ? { ...s, count: 0 } : s
-      )
-    );
+    setStickers(prev => {
+      const updated = [...prev];
+      const index = updated.findIndex(s => s.id === item.id);
+      if (index !== -1) {
+        updated[index] = {
+          ...updated[index],
+          count: 0
+        };
+      }
+      return updated;
+    });
   };
 
   // ✅ FIXED CLEAR ALL (WEB + MOBILE)
@@ -135,11 +144,15 @@ export default function Dashboard() {
 
   // FILTER + SEARCH
   const filtered = stickers.filter(s => {
-    const label = (s.label || '').toLowerCase();
-    const matchSearch = label.includes((search || '').toLowerCase());
+    if (!s) return false;
 
+    const label = (s.label || '').toLowerCase();
+    const searchText = (search || '').toLowerCase();
+
+    const matchSearch = label.includes(searchText);
     if (!matchSearch) return false;
 
+    // IMPORTANT: never return empty screens
     if (filter === 'missing') return s.count === 0;
     if (filter === 'owned') return s.count >= 1;
     if (filter === 'duplicates') return s.count > 1;
@@ -243,10 +256,44 @@ export default function Dashboard() {
         }}
       />
 
+      <View style={{
+        flexDirection:'row',
+        justifyContent:'space-around',
+        marginVertical:10
+      }}>
+        {['all','missing','owned','duplicates'].map(f => {
+          const isActive = filter === f;
+
+          return (
+            <TouchableOpacity
+              key={f}
+              onPress={() => setFilter(f as any)}
+              style={{
+                backgroundColor: isActive ? '#00cc66' : '#333',
+                paddingVertical:6,
+                paddingHorizontal:12,
+                borderRadius:20
+              }}
+            >
+              <Text style={{
+                color:'#fff',
+                fontWeight:'bold',
+                fontSize:12
+              }}>
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
       <FlatList
         data={filtered}
-        numColumns={5}
+        numColumns={7}
         keyExtractor={(item) => item.id.toString()}
+        initialNumToRender={30}
+        maxToRenderPerBatch={50}
+        windowSize={10}
         renderItem={({ item }) => (
           <TouchableOpacity
             onPress={() => handlePress(item)}

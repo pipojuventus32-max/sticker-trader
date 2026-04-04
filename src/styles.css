@@ -1,47 +1,74 @@
 @import "tailwindcss";
 
-/* App background + subtle glass look defaults */
+/* Panini / FIFA World Cup 2026 sticker promo palette */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
+  --panini-red: #e30613;
+  --panini-red-dark: #b5050f;
+  --panini-teal: #00a99d;
+  --panini-teal-dark: #078c82;
+  --panini-gold: #ffd700;
 }
 
 html,
 body,
 #root {
-  height: 100%;
+  min-height: 100%;
 }
 
 body {
   margin: 0;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji",
     "Segoe UI Emoji";
-  background:
-    radial-gradient(900px 600px at 15% 20%, rgba(56, 189, 248, 0.20), transparent 60%),
-    radial-gradient(900px 600px at 85% 25%, rgba(168, 85, 247, 0.20), transparent 60%),
-    radial-gradient(1100px 700px at 50% 90%, rgba(34, 197, 94, 0.14), transparent 60%),
-    linear-gradient(180deg, #070A12, #050711 55%, #03040A);
-  color: #E7EAF3;
+  color: #0f172a;
+  background-color: #f1f5f9;
+  background-attachment: fixed;
+}
+
+/* Default album background (no promo art) */
+body[data-bg-theme="default"] {
+  background-image: linear-gradient(165deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+  background-size: auto;
+  background-position: center top;
+  background-repeat: no-repeat;
+}
+
+/* Panini official sticker album */
+body[data-bg-theme="panini"] {
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.55) 100%),
+    url("/panini-wc-bg.png");
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 .glass {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.82));
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  box-shadow:
+    0 4px 24px rgba(15, 23, 42, 0.08),
+    0 16px 48px rgba(227, 6, 19, 0.06);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .glass-strong {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.88));
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow:
+    0 8px 32px rgba(15, 23, 42, 0.1),
+    0 24px 64px rgba(0, 169, 157, 0.08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 .focus-ring:focus-visible {
   outline: none;
   box-shadow:
-    0 0 0 2px rgba(7, 10, 18, 0.9),
-    0 0 0 4px rgba(56, 189, 248, 0.55);
+    0 0 0 2px #ffffff,
+    0 0 0 4px var(--panini-red),
+    0 0 0 6px rgba(0, 169, 157, 0.45);
 }
-

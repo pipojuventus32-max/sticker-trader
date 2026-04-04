@@ -22,7 +22,6 @@ export default function App() {
   }, []);
 
   if (user === undefined) return null;
-
   if (!user) return <Login />;
 
   return <Dashboard />;

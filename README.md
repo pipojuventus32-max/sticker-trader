@@ -16,6 +16,26 @@ npm run build
 npm run preview
 ```
 
+## Share with friends (host online)
+
+The built site is plain static files in `dist/`. Put it on any static host and send people the link.
+
+### Vercel (free tier)
+
+1. Push this repo to [GitHub](https://github.com).
+2. Sign in at [vercel.com](https://vercel.com) and **Import** the repository.
+3. Vercel detects Vite; leave defaults (build: `npm run build`, output: `dist`).
+4. After deploy, copy the URL (e.g. `https://your-app.vercel.app`) and share it.
+
+`vercel.json` includes a SPA fallback so future client-side routes keep working.
+
+### Other options
+
+- **Netlify**: New site from Git, build `npm run build`, publish directory `dist`.
+- **Cloudflare Pages**: Connect the repo, build command `npm run build`, output `dist`.
+
+On a phone, friends can open the link in the browser and use **Add to Home Screen** for an app-like shortcut (no store required).
+
 # Welcome to your Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).

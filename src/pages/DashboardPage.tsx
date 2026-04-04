@@ -1,76 +1,47 @@
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import { db, auth } from '../lib/firebase';
-import { STICKERS } from '../data/stickers';
-import { shareText } from '../lib/share';
-import type { StoredUser } from '../lib/storage';
 import { Button, Card, CardHeader, Container, Divider, Input, Pill } from '../components/ui';
+import { getAlbumById } from '../data/albums';
+import { shareText } from '../lib/share';
+import { loadSelectedAlbumId, loadStickerRows, persistStickerRows, type StickerRow } from '../lib/stickerStorage';
 
-type StickerRow = { id: number; label: string; count: number };
 type Filter = 'all' | 'missing' | 'owned' | 'duplicates';
-
-function createDefault(): StickerRow[] {
-  return STICKERS.map((label, index) => ({ id: index, label, count: 0 }));
-}
 
 function percent(n: number) {
   if (!Number.isFinite(n)) return 0;
   return Math.max(0, Math.min(100, Math.floor(n)));
 }
 
-export default function DashboardPage({ user }: { user: StoredUser }) {
-  const [stickers, setStickers] = useState<StickerRow[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: () => void }) {
+  const [albumId] = useState(() => loadSelectedAlbumId());
+  const [stickers, setStickers] = useState<StickerRow[]>(() => loadStickerRows(loadSelectedAlbumId()));
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
 
   const saveTimer = useRef<number | null>(null);
+  const longPressConsumeClickRef = useRef<number | null>(null);
+  const longPressTimersRef = useRef<Map<number, number>>(new Map());
+
+  const album = getAlbumById(albumId);
+  const totalSlots = album?.labels.length ?? 0;
+  const itemsPlural = album?.itemLabels.plural ?? 'stickers';
+  const itemsSingular = album?.itemLabels.singular ?? 'sticker';
+
+  useLayoutEffect(() => {
+    document.body.dataset.bgTheme = album?.background ?? 'default';
+  }, [album?.background]);
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      const ref = doc(db, 'users', user.uid);
-      const snap = await getDoc(ref);
-
-      if (snap.exists() && (snap.data() as any)?.stickers) {
-        const data = (snap.data() as any).stickers as any[];
-        const fixed = data.map((s: any, i: number) => ({
-          id: Number.isFinite(s?.id) ? s.id : i,
-          label: typeof s?.label === 'string' ? s.label : STICKERS[i],
-          count: Number.isFinite(s?.count) ? s.count : 0,
-        }));
-        setStickers(fixed);
-      } else {
-        const def = createDefault();
-        setStickers(def);
-        await setDoc(ref, { stickers: def });
-      }
-
-      setLoading(false);
-    };
-
-    void loadData();
-  }, [user.uid]);
-
-  const save = async (data: StickerRow[]) => {
-    await setDoc(doc(db, 'users', user.uid), { stickers: data });
-  };
-
-  useEffect(() => {
-    if (loading) return;
-
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => {
-      void save(stickers);
+      persistStickerRows(albumId, stickers);
     }, 900);
 
     return () => {
       if (saveTimer.current) window.clearTimeout(saveTimer.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stickers]);
+  }, [albumId, stickers]);
 
   const owned = useMemo(() => stickers.filter((s) => s.count > 0).length, [stickers]);
   const hasMissing = useMemo(() => stickers.some((s) => s.count === 0), [stickers]);
@@ -97,139 +68,232 @@ export default function DashboardPage({ user }: { user: StoredUser }) {
     });
   };
 
-  const handleLongPress = (item: StickerRow) => {
+  const handleDecrement = (item: StickerRow) => {
     setStickers((prev) => {
       const updated = [...prev];
       const index = updated.findIndex((s) => s.id === item.id);
-      if (index !== -1) updated[index] = { ...updated[index], count: 0 };
+      if (index !== -1) {
+        const next = Math.max(0, updated[index].count - 1);
+        updated[index] = { ...updated[index], count: next };
+      }
       return updated;
     });
   };
 
-  const clearAll = async () => {
-    const ok = window.confirm('Are you sure you want to reset all stickers?');
-    if (!ok) return;
+  const confirmClearAll = () => {
     const reset = stickers.map((s) => ({ ...s, count: 0 }));
     setStickers(reset);
-    await save(reset);
+    persistStickerRows(albumId, reset);
+    setClearDialogOpen(false);
   };
+
+  const shareLabel = album?.shortName ?? 'Album';
 
   const shareMissing = async () => {
     const list = stickers.filter((s) => s.count === 0).map((s) => s.label).join(', ');
-    await shareText('Missing stickers', `Missing stickers:\n${list}`);
+    await shareText(
+      `Missing ${itemsPlural} — ${shareLabel}`,
+      `Missing ${itemsPlural} (${shareLabel}):\n${list}`,
+    );
   };
 
   const shareDuplicates = async () => {
     const list = stickers
       .filter((s) => s.count > 1)
-      .map((s) => `${s.label} x${s.count}`)
+      .map((s) => s.label)
       .join(', ');
-    await shareText('Duplicates', `Duplicates:\n${list}`);
+    await shareText(
+      `Doubles — ${shareLabel}`,
+      `Duplicate ${itemsPlural} (${shareLabel}):\n${list}`,
+    );
   };
 
-  const headerSubtitle = `${owned} collected • ${STICKERS.length - owned} missing • ${percent(
-    (owned / STICKERS.length) * 100,
-  )}%`;
+  const headerSubtitle =
+    totalSlots > 0
+      ? `${owned} collected • ${totalSlots - owned} missing • ${percent((owned / totalSlots) * 100)}%`
+      : '';
 
   return (
     <Container>
-      <div className="flex items-center justify-between gap-3 mb-6">
-        <div>
-          <div className="text-sm text-white/60">Signed in as</div>
-          <div className="font-semibold">{user.email ?? user.uid}</div>
-        </div>
-        <Button
-          variant="ghost"
-          onClick={() => {
-            void signOut(auth);
-          }}
-        >
-          Sign out
+      <div className="mb-3 flex justify-start sm:mb-4">
+        <Button variant="ghost" className="min-h-10 px-3 text-sm" onClick={onOpenAlbumMenu}>
+          ← Albums
         </Button>
       </div>
-
       <Card className="overflow-hidden">
-        <CardHeader title="Sticker Tracker" subtitle={headerSubtitle} />
+        <CardHeader title={album?.fullName ?? 'Sticker Tracker'} subtitle={headerSubtitle} />
         <Divider />
 
-        <div className="px-6 py-5 space-y-4">
-          <div className="flex flex-wrap gap-3">
-            <Button variant="danger" onClick={shareMissing} disabled={!hasMissing}>
-              Share Missing
-            </Button>
-            <Button variant="secondary" onClick={shareDuplicates} disabled={!hasDuplicates}>
-              Share Duplicates
-            </Button>
-            <div className="flex-1" />
-            <Button onClick={clearAll}>Clear All</Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+        <div className="space-y-4 px-4 py-4 sm:px-6 sm:py-5">
+          <div className="w-full">
             <Input
               label="Search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Try: FWC 1, BRA 20…"
+              placeholder={album?.searchPlaceholder ?? 'Search…'}
+              enterKeyHint="search"
+              autoComplete="off"
+              autoCorrect="off"
             />
+          </div>
 
-            <div>
-              <div className="mb-2 text-sm font-medium text-white/80">Filter</div>
-              <div className="flex flex-wrap gap-2">
-                {(['all', 'missing', 'owned', 'duplicates'] as const).map((f) => (
-                  <Pill key={f} active={filter === f} onClick={() => setFilter(f)}>
-                    {f.charAt(0).toUpperCase() + f.slice(1)}
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+            <Button
+              className="w-full uppercase tracking-wide sm:w-auto"
+              variant="danger"
+              selected={filter === 'missing'}
+              onClick={shareMissing}
+              disabled={!hasMissing}
+            >
+              Share Missing
+            </Button>
+            <Button
+              className="w-full uppercase tracking-wide sm:w-auto"
+              variant="secondary"
+              selected={filter === 'duplicates'}
+              onClick={shareDuplicates}
+              disabled={!hasDuplicates}
+            >
+              Share Doubles
+            </Button>
+            <Button className="w-full sm:w-auto" onClick={() => setClearDialogOpen(true)}>
+              Clear All
+            </Button>
+          </div>
+
+          <div>
+            <div className="mb-2 text-sm font-bold text-slate-800">Filter</div>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+              {(['all', 'missing', 'owned', 'duplicates'] as const).map((f) => {
+                const label =
+                  f === 'duplicates' ? 'Doubles' : f.charAt(0).toUpperCase() + f.slice(1);
+                return (
+                  <Pill
+                    key={f}
+                    active={filter === f}
+                    tone={f === 'duplicates' ? 'blue' : 'default'}
+                    onClick={() => setFilter(f)}
+                  >
+                    {label}
                   </Pill>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </div>
         </div>
 
         <Divider />
 
-        {loading ? (
-          <div className="px-6 py-10 text-sm text-white/70">Loading stickers…</div>
-        ) : (
-          <div className="p-4 sm:p-6">
-            <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-8 gap-2.5">
-              {filtered.map((item) => {
-                const tone =
-                  item.count === 0
-                    ? 'bg-white/6 border-white/10 text-white/80'
-                    : item.count === 1
-                      ? 'bg-emerald-500/16 border-emerald-300/20 text-white'
-                      : 'bg-sky-500/16 border-sky-300/20 text-white';
+        <div className="p-4 sm:p-6">
+          <div className="grid grid-cols-7 gap-2 sm:gap-2.5">
+            {filtered.map((item) => {
+              const tone =
+                item.count === 0
+                  ? 'border-slate-300 bg-slate-100 text-slate-700'
+                  : item.count === 1
+                    ? 'border-[#16a34a] bg-[#bbf7d0] text-slate-900 shadow-[0_3px_12px_rgba(22,163,74,0.2)]'
+                    : 'border-[#2563eb] bg-[#bfdbfe] text-slate-900 shadow-[0_3px_12px_rgba(37,99,235,0.22)]';
 
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => handlePress(item)}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      handleLongPress(item);
-                    }}
-                    title="Click: +1 • Right-click: reset"
-                    className={`focus-ring glass-strong group flex h-12 items-center justify-center rounded-xl border text-[11px] font-semibold tracking-tight transition hover:translate-y-[-1px] ${tone}`}
-                  >
-                    <div className="flex flex-col items-center leading-none">
-                      <div className="opacity-95">{item.label}</div>
-                      <div className="mt-1 text-[10px] font-medium text-white/70 group-hover:text-white/80">
-                        x{item.count}
-                      </div>
+              const longPressMs = 420;
+
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    if (longPressConsumeClickRef.current === item.id) {
+                      longPressConsumeClickRef.current = null;
+                      return;
+                    }
+                    handlePress(item);
+                  }}
+                  onPointerDown={() => {
+                    const id = item.id;
+                    const prev = longPressTimersRef.current.get(id);
+                    if (prev !== undefined) window.clearTimeout(prev);
+
+                    const timeoutId = window.setTimeout(() => {
+                      longPressTimersRef.current.delete(id);
+                      longPressConsumeClickRef.current = id;
+                      handleDecrement(item);
+                    }, longPressMs);
+
+                    longPressTimersRef.current.set(id, timeoutId);
+                  }}
+                  onPointerUp={() => {
+                    const t = longPressTimersRef.current.get(item.id);
+                    if (t !== undefined) {
+                      window.clearTimeout(t);
+                      longPressTimersRef.current.delete(item.id);
+                    }
+                  }}
+                  onPointerCancel={() => {
+                    const t = longPressTimersRef.current.get(item.id);
+                    if (t !== undefined) {
+                      window.clearTimeout(t);
+                      longPressTimersRef.current.delete(item.id);
+                    }
+                  }}
+                  onPointerLeave={() => {
+                    const t = longPressTimersRef.current.get(item.id);
+                    if (t !== undefined) {
+                      window.clearTimeout(t);
+                      longPressTimersRef.current.delete(item.id);
+                    }
+                  }}
+                  onContextMenu={(e) => e.preventDefault()}
+                  title="Click: +1 • Hold: -1 • Right-click disabled"
+                  className={`focus-ring group relative flex min-h-12 touch-manipulation select-none items-center justify-center rounded-xl border-2 text-[10px] font-extrabold leading-tight tracking-tight transition active:scale-[0.97] shadow-sm sm:h-12 sm:text-[11px] sm:active:scale-100 sm:hover:translate-y-[-1px] ${tone}`}
+                >
+                  <div className="px-2 text-center opacity-95">{item.label}</div>
+                  {item.count > 1 ? (
+                    <div className="absolute right-1 top-1 grid h-5 min-w-5 place-items-center rounded-full border-2 border-[#e30613] bg-[#ffd700] px-1 text-[10px] font-extrabold text-slate-900 shadow-sm">
+                      {item.count - 1}
                     </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {filtered.length === 0 ? (
-              <div className="mt-6 text-sm text-white/65">No stickers match your search/filter.</div>
-            ) : null}
+                  ) : null}
+                </button>
+              );
+            })}
           </div>
-        )}
+
+          {filtered.length === 0 ? (
+            <div className="mt-6 text-sm text-slate-600">
+              No {itemsPlural} match your search/filter.
+            </div>
+          ) : null}
+        </div>
       </Card>
+
+      {clearDialogOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-4 pb-[max(1rem,var(--safe-bottom))] backdrop-blur-sm sm:items-center sm:pb-4"
+          role="presentation"
+          onClick={() => setClearDialogOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="clear-dialog-title"
+            className="glass-strong w-full max-w-sm rounded-2xl p-5 shadow-[0_20px_60px_rgba(0,0,0,0.45)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="clear-dialog-title" className="text-lg font-extrabold text-slate-900">
+              Clear all counts?
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              This resets every {itemsSingular} to zero. You can&apos;t undo this from the app.
+            </p>
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+              <Button variant="ghost" className="w-full sm:w-auto" onClick={() => setClearDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="danger" className="w-full sm:w-auto" onClick={confirmClearAll}>
+                Clear all
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </Container>
   );
 }
-
