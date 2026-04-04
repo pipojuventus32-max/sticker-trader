@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 
 import AlbumMenuPage from './pages/AlbumMenuPage';
 import DashboardPage from './pages/DashboardPage';
@@ -13,8 +14,18 @@ export default function App() {
   };
 
   if (screen === 'menu') {
-    return <AlbumMenuPage onSelectAlbum={handleSelectAlbum} />;
+    return (
+      <>
+        <AlbumMenuPage onSelectAlbum={handleSelectAlbum} />
+        <Analytics />
+      </>
+    );
   }
 
-  return <DashboardPage onOpenAlbumMenu={() => setScreen('menu')} />;
+  return (
+    <>
+      <DashboardPage onOpenAlbumMenu={() => setScreen('menu')} />
+      <Analytics />
+    </>
+  );
 }
