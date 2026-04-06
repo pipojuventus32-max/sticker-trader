@@ -45,9 +45,16 @@ const StickerGridCell = memo(function StickerGridCell({
       style={{ contentVisibility: 'auto', containIntrinsicSize: '48px 48px' }}
       className={`focus-ring relative flex min-h-12 touch-manipulation select-none items-center justify-center rounded-xl border-2 text-[10px] font-extrabold leading-tight tracking-tight shadow-sm transition-[filter,box-shadow] duration-75 active:brightness-[0.94] sm:h-12 sm:text-[11px] ${tone}`}
     >
-      <div className="px-2 text-center opacity-95">{label}</div>
+      <div
+        className={`z-0 px-1.5 text-center opacity-95 sm:px-2 ${count > 1 ? 'pb-2.5 sm:pb-1' : ''}`}
+      >
+        {label}
+      </div>
       {count > 1 ? (
-        <div className="absolute right-1 top-1 grid h-5 min-w-5 place-items-center rounded-full border-2 border-[#e30613] bg-[#ffd700] px-1 text-[10px] font-extrabold text-slate-900 shadow-sm">
+        <div
+          className="pointer-events-none absolute bottom-0.5 right-0.5 z-10 flex min-h-3.5 min-w-3.5 items-center justify-center rounded border border-[#e30613] bg-[#ffd700] px-0.5 text-[6px] font-extrabold leading-none tabular-nums text-slate-900 shadow-sm sm:bottom-1 sm:right-1 sm:min-h-4 sm:min-w-4 sm:px-1 sm:text-[7px]"
+          aria-hidden
+        >
           {count - 1}
         </div>
       ) : null}
