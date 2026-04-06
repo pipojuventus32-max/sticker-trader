@@ -42,8 +42,8 @@ const StickerGridCell = memo(function StickerGridCell({
       onPointerLeave={() => onCellPointerEnd(id)}
       onContextMenu={(e) => e.preventDefault()}
       title="Click: +1 • Hold: -1 • Right-click disabled"
-      style={{ contentVisibility: 'auto', containIntrinsicSize: '48px 48px' }}
-      className={`focus-ring relative flex min-h-12 touch-manipulation select-none items-center justify-center rounded-xl border-2 text-[10px] font-extrabold leading-tight tracking-tight shadow-sm transition-[filter,box-shadow] duration-75 active:brightness-[0.94] sm:h-12 sm:text-[11px] ${tone}`}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '56px 56px' }}
+      className={`focus-ring relative flex min-h-14 touch-manipulation select-none items-center justify-center rounded-xl border-2 text-xs font-extrabold leading-tight tracking-tight shadow-sm transition-[filter,box-shadow] duration-75 active:brightness-[0.94] sm:h-14 sm:text-sm ${tone}`}
     >
       <div className="min-w-0 max-w-full px-1.5 text-center opacity-95 sm:px-2">{label}</div>
       {count > 1 ? (
