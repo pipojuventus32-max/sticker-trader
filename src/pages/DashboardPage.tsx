@@ -46,13 +46,13 @@ const StickerGridCell = memo(function StickerGridCell({
       className={`focus-ring relative flex min-h-12 touch-manipulation select-none items-center justify-center rounded-xl border-2 text-[10px] font-extrabold leading-tight tracking-tight shadow-sm transition-[filter,box-shadow] duration-75 active:brightness-[0.94] sm:h-12 sm:text-[11px] ${tone}`}
     >
       <div
-        className={`z-0 px-1.5 text-center opacity-95 sm:px-2 ${count > 1 ? 'pb-2.5 sm:pb-1' : ''}`}
+        className={`z-0 min-w-0 max-w-full px-1.5 text-center text-[10px] font-extrabold leading-tight tracking-tight opacity-95 sm:px-2 sm:text-[11px] ${count > 1 ? 'pr-4 pt-0.5 sm:pr-5' : ''}`}
       >
         {label}
       </div>
       {count > 1 ? (
         <div
-          className="pointer-events-none absolute bottom-0.5 right-0.5 z-10 flex min-h-3.5 min-w-3.5 items-center justify-center rounded border border-[#e30613] bg-[#ffd700] px-0.5 text-[6px] font-extrabold leading-none tabular-nums text-slate-900 shadow-sm sm:bottom-1 sm:right-1 sm:min-h-4 sm:min-w-4 sm:px-1 sm:text-[7px]"
+          className="pointer-events-none absolute right-0.5 top-0.5 z-10 flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-md border border-[#e30613] bg-[#ffd700] px-0.5 text-[10px] font-extrabold leading-none tabular-nums text-slate-900 shadow-sm sm:right-1 sm:top-1 sm:min-h-4 sm:min-w-4 sm:text-[11px]"
           aria-hidden
         >
           {count - 1}
