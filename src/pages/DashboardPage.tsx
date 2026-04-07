@@ -98,6 +98,14 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
   const hasMissing = useMemo(() => stickers.some((s) => s.count === 0), [stickers]);
   const hasDuplicates = useMemo(() => stickers.some((s) => s.count > 1), [stickers]);
 
+  /** Total copies beyond the first per slot (tradable extras). */
+  const duplicateExtra = useMemo(
+    () => stickers.reduce((sum, s) => sum + Math.max(0, s.count - 1), 0),
+    [stickers],
+  );
+  /** How many slots have more than one copy. */
+  const duplicateSlots = useMemo(() => stickers.filter((s) => s.count > 1).length, [stickers]);
+
   const filtered = useMemo(() => {
     const searchText = search.trim().toLowerCase();
     return stickers.filter((s) => {
@@ -188,10 +196,18 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
     );
   };
 
-  const headerSubtitle =
-    totalSlots > 0
-      ? `${owned} collected • ${totalSlots - owned} missing • ${percent((owned / totalSlots) * 100)}%`
-      : '';
+  const headerSubtitle = useMemo(() => {
+    if (totalSlots <= 0) return '';
+    const missing = totalSlots - owned;
+    const pct = percent((owned / totalSlots) * 100);
+    const dupPart =
+      duplicateExtra === 0
+        ? `0 extra ${itemsPlural}`
+        : duplicateSlots <= 1
+          ? `${duplicateExtra} extra ${duplicateExtra === 1 ? itemsSingular : itemsPlural}`
+          : `${duplicateExtra} extra ${itemsPlural} (${duplicateSlots} doubles)`;
+    return `${owned} collected • ${missing} missing • ${dupPart} • ${pct}%`;
+  }, [totalSlots, owned, duplicateExtra, duplicateSlots, itemsPlural, itemsSingular]);
 
   return (
     <Container>
