@@ -22,7 +22,7 @@ export const ALBUM_MENU: readonly AlbumMenuDefinition[] = [
   {
     id: 'panini-wc-stickers-2026',
     shortName: 'WC 2026 Stickers',
-    fullName: 'FIFA World Cup 2026™ Official Stickers',
+    fullName: 'FIFA WORLD CUP 2026™ Official Sticker Collection',
     slotCount: 960,
     background: 'default',
     searchPlaceholder: 'Try: FWC 1, BRA 20…',

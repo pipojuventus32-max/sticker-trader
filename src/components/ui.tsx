@@ -30,7 +30,7 @@ export function CardHeader({
         <div className="mt-2 flex flex-wrap items-baseline gap-y-1 text-xs leading-snug text-slate-600 sm:text-sm sm:leading-normal">
           {subtitle ? <span className="min-w-0">{subtitle}</span> : null}
           {subtitleExtra ? (
-            <span className="ml-5 shrink-0 font-bold text-slate-800 sm:ml-8">{subtitleExtra}</span>
+            <span className="ml-5 shrink-0 sm:ml-8">{subtitleExtra}</span>
           ) : null}
         </div>
       ) : null}
