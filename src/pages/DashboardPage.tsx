@@ -103,9 +103,6 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
     () => stickers.reduce((sum, s) => sum + Math.max(0, s.count - 1), 0),
     [stickers],
   );
-  /** How many slots have more than one copy. */
-  const duplicateSlots = useMemo(() => stickers.filter((s) => s.count > 1).length, [stickers]);
-
   const filtered = useMemo(() => {
     const searchText = search.trim().toLowerCase();
     return stickers.filter((s) => {
@@ -200,14 +197,14 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
     if (totalSlots <= 0) return '';
     const missing = totalSlots - owned;
     const pct = percent((owned / totalSlots) * 100);
-    const dupPart =
-      duplicateExtra === 0
-        ? `0 extra ${itemsPlural}`
-        : duplicateSlots <= 1
-          ? `${duplicateExtra} extra ${duplicateExtra === 1 ? itemsSingular : itemsPlural}`
-          : `${duplicateExtra} extra ${itemsPlural} (${duplicateSlots} doubles)`;
-    return `${owned} collected • ${missing} missing • ${dupPart} • ${pct}%`;
-  }, [totalSlots, owned, duplicateExtra, duplicateSlots, itemsPlural, itemsSingular]);
+    return `${owned} collected • ${missing} missing • ${pct}%`;
+  }, [totalSlots, owned]);
+
+  const headerDuplicates = useMemo(() => {
+    if (totalSlots <= 0) return '';
+    if (duplicateExtra === 1) return '1 duplicate';
+    return `${duplicateExtra} duplicates`;
+  }, [totalSlots, duplicateExtra]);
 
   return (
     <Container>
@@ -217,7 +214,11 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
         </Button>
       </div>
       <Card className="overflow-hidden">
-        <CardHeader title={album?.fullName ?? 'Sticker Tracker'} subtitle={headerSubtitle} />
+        <CardHeader
+          title={album?.fullName ?? 'Sticker Tracker'}
+          subtitle={headerSubtitle}
+          subtitleExtra={headerDuplicates}
+        />
         <Divider />
 
         <div className="space-y-4 px-4 py-4 sm:px-6 sm:py-5">

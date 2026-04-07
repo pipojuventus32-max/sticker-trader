@@ -12,13 +12,27 @@ export function Card({ children, className = '' }: { children: ReactNode; classN
   return <div className={`glass-strong rounded-2xl ${className}`}>{children}</div>;
 }
 
-export function CardHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+export function CardHeader({
+  title,
+  subtitle,
+  subtitleExtra,
+}: {
+  title: string;
+  subtitle?: string;
+  /** Shown below `subtitle`, visually separate (e.g. duplicate count after main stats). */
+  subtitleExtra?: string;
+}) {
   return (
     <div className="px-4 pb-3 pt-4 sm:px-6 sm:pb-4 sm:pt-6">
       <div className="mb-3 h-1 w-14 rounded-full bg-gradient-to-r from-[#e30613] via-[#ffd700] to-[#2563eb]" />
       <div className="text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">{title}</div>
-      {subtitle ? (
-        <div className="mt-2 text-xs leading-snug text-slate-600 sm:text-sm sm:leading-normal">{subtitle}</div>
+      {subtitle || subtitleExtra ? (
+        <div className="mt-2 space-y-1.5 text-xs leading-snug text-slate-600 sm:text-sm sm:leading-normal">
+          {subtitle ? <div>{subtitle}</div> : null}
+          {subtitleExtra ? (
+            <div className="font-bold text-slate-800">{subtitleExtra}</div>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
