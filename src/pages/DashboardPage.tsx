@@ -286,36 +286,40 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
 
           <div>
             <div className="mb-2 text-sm font-bold text-slate-800">Filter</div>
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
-              {(['all', 'missing', 'owned', 'duplicates'] as const).map((f) => {
-                const label =
-                  f === 'duplicates' ? 'Doubles' : f.charAt(0).toUpperCase() + f.slice(1);
-                return (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+                {(['all', 'missing', 'owned', 'duplicates'] as const).map((f) => {
+                  const label =
+                    f === 'duplicates' ? 'Doubles' : f.charAt(0).toUpperCase() + f.slice(1);
+                  return (
+                    <Pill
+                      key={f}
+                      active={filter === f}
+                      tone={f === 'duplicates' ? 'blue' : 'default'}
+                      onClick={() => {
+                        setFilter(f);
+                        setTeamFilter(null);
+                      }}
+                    >
+                      {label}
+                    </Pill>
+                  );
+                })}
+              </div>
+              {showTeamsFilter ? (
+                <div className="flex justify-end border-t border-slate-200 pt-3 sm:shrink-0 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0 md:pl-5">
                   <Pill
-                    key={f}
-                    active={filter === f}
-                    tone={f === 'duplicates' ? 'blue' : 'default'}
+                    active={filter === 'teams'}
+                    tone="default"
                     onClick={() => {
-                      setFilter(f);
+                      setFilter('teams');
                       setTeamFilter(null);
                     }}
+                    className="!w-auto min-w-[7.5rem]"
                   >
-                    {label}
+                    By country
                   </Pill>
-                );
-              })}
-              {showTeamsFilter ? (
-                <Pill
-                  active={filter === 'teams'}
-                  tone="default"
-                  onClick={() => {
-                    setFilter('teams');
-                    setTeamFilter(null);
-                  }}
-                  className="col-span-2 sm:col-span-1"
-                >
-                  By country
-                </Pill>
+                </div>
               ) : null}
             </div>
           </div>
