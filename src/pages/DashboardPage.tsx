@@ -307,7 +307,7 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
                 })}
               </div>
               {showTeamsFilter ? (
-                <div className="flex justify-end border-t border-slate-200 pt-3 sm:shrink-0 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0 md:pl-5">
+                <div className="flex w-full justify-stretch border-t border-slate-200 pt-3 sm:w-auto sm:shrink-0 sm:justify-end sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0 md:pl-5">
                   <Pill
                     active={filter === 'teams'}
                     tone="default"
@@ -315,7 +315,7 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
                       setFilter('teams');
                       setTeamFilter(null);
                     }}
-                    className="!w-auto min-w-[7.5rem]"
+                    className="sm:min-w-[8.5rem]"
                   >
                     By country
                   </Pill>
@@ -329,13 +329,13 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
 
         {filter === 'teams' && showTeamsFilter ? (
           teamFilter === null ? (
-            <div className="px-4 py-4 sm:px-6 sm:py-5">
+            <div className="px-4 pb-20 pt-4 sm:px-6 sm:pb-5 sm:pt-5">
               <p className="mb-3 text-sm leading-relaxed text-slate-600">
                 Sections follow the album order. Tap one to see the{' '}
                 <span className="font-bold text-slate-800">missing</span> {itemsPlural} for that country
                 or group.
               </p>
-              <div className="mx-auto max-h-[min(70vh,560px)] space-y-1.5 overflow-y-auto pr-1 [scrollbar-width:thin]">
+              <div className="mx-auto space-y-1.5">
                 {countryListFiltered.map((row) => (
                   <button
                     key={row.code}
@@ -352,7 +352,7 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
               ) : null}
             </div>
           ) : (
-            <div className="p-4 sm:p-6">
+            <div className="p-4 pb-24 sm:p-6 sm:pb-8">
               <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                 <Button variant="ghost" className="min-h-10 w-full px-3 text-sm sm:w-auto" onClick={() => setTeamFilter(null)}>
                   ← All countries
@@ -387,7 +387,7 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
             </div>
           )
         ) : (
-          <div className="p-4 sm:p-6">
+          <div className="p-4 pb-24 sm:p-6 sm:pb-8">
             <div className="grid grid-cols-7 gap-2 sm:gap-2.5">
               {filtered.map((item) => (
                 <StickerGridCell
