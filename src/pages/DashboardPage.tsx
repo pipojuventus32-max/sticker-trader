@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 
 import { Button, Card, CardHeader, Container, Divider, Input, Pill } from '../components/ui';
 import { getAlbumById } from '../data/albums';
+import { WC_2026_COUNTRY_ROWS, wc2026RowForCode } from '../data/wc2026CountryLabels';
 import { loadSelectedAlbumId } from '../lib/albumSelection';
 import { shareText } from '../lib/share';
 import { loadStickerRows, persistStickerRows, type StickerRow } from '../lib/stickerStorage';
@@ -14,14 +15,6 @@ const LONG_PRESS_MS = 420;
 function teamCodeFromLabel(label: string): string | null {
   const m = /^([A-Z]{2,4}) (\d+)$/.exec(label.trim());
   return m ? m[1] : null;
-}
-
-function sortTeamCodes(codes: string[]): string[] {
-  return [...codes].sort((a, b) => {
-    if (a === 'FWC') return -1;
-    if (b === 'FWC') return 1;
-    return a.localeCompare(b);
-  });
 }
 
 const StickerGridCell = memo(function StickerGridCell({
@@ -119,27 +112,31 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
     [stickers],
   );
 
-  const teamCodes = useMemo(() => {
-    const set = new Set<string>();
-    for (const s of stickers) {
-      const code = teamCodeFromLabel(s.label);
-      if (code) set.add(code);
-    }
-    return sortTeamCodes(Array.from(set));
-  }, [stickers]);
+  const showTeamsFilter = albumId === 'panini-wc-stickers-2026';
 
-  const showTeamsFilter = teamCodes.length >= 2;
+  const countryListFiltered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [...WC_2026_COUNTRY_ROWS];
+    return WC_2026_COUNTRY_ROWS.filter(
+      (r) => r.name.toLowerCase().includes(q) || r.code.toLowerCase().includes(q),
+    );
+  }, [search]);
 
   const filtered = useMemo(() => {
     const searchText = search.trim().toLowerCase();
     return stickers.filter((s) => {
       const label = (s.label || '').toLowerCase();
-      if (searchText && !label.includes(searchText)) return false;
       if (filter === 'teams') {
-        if (teamFilter !== null && teamCodeFromLabel(s.label) !== teamFilter) return false;
-      } else if (filter === 'missing') return s.count === 0;
-      else if (filter === 'owned') return s.count >= 1;
-      else if (filter === 'duplicates') return s.count > 1;
+        if (teamFilter === null) return false;
+        if (teamCodeFromLabel(s.label) !== teamFilter) return false;
+        if (s.count !== 0) return false;
+        if (searchText && !label.includes(searchText)) return false;
+        return true;
+      }
+      if (searchText && !label.includes(searchText)) return false;
+      if (filter === 'missing') return s.count === 0;
+      if (filter === 'owned') return s.count >= 1;
+      if (filter === 'duplicates') return s.count > 1;
       return true;
     });
   }, [stickers, search, filter, teamFilter]);
@@ -311,67 +308,103 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
                 <Pill
                   active={filter === 'teams'}
                   tone="default"
-                  onClick={() => setFilter('teams')}
+                  onClick={() => {
+                    setFilter('teams');
+                    setTeamFilter(null);
+                  }}
                   className="col-span-2 sm:col-span-1"
                 >
                   By country
                 </Pill>
               ) : null}
             </div>
-            {filter === 'teams' && showTeamsFilter ? (
-              <div className="mt-4">
-                <div className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-                  Country / section
-                </div>
-                <div className="-mx-1 flex max-w-full gap-1.5 overflow-x-auto px-1 pb-1 pt-0.5 [scrollbar-width:thin]">
-                  <Pill
-                    active={teamFilter === null}
-                    tone="default"
-                    onClick={() => setTeamFilter(null)}
-                    className="w-auto shrink-0 px-3"
-                  >
-                    All
-                  </Pill>
-                  {teamCodes.map((code) => (
-                    <Pill
-                      key={code}
-                      active={teamFilter === code}
-                      tone="default"
-                      onClick={() => setTeamFilter(code)}
-                      className="w-auto shrink-0 px-3 font-mono text-xs"
-                    >
-                      {code}
-                    </Pill>
-                  ))}
-                </div>
-              </div>
-            ) : null}
           </div>
         </div>
 
         <Divider />
 
-        <div className="p-4 sm:p-6">
-          <div className="grid grid-cols-7 gap-2 sm:gap-2.5">
-            {filtered.map((item) => (
-              <StickerGridCell
-                key={item.id}
-                id={item.id}
-                label={item.label}
-                count={item.count}
-                onCellClick={onCellClick}
-                onCellPointerDown={onCellPointerDown}
-                onCellPointerEnd={onCellPointerEnd}
-              />
-            ))}
-          </div>
-
-          {filtered.length === 0 ? (
-            <div className="mt-6 text-sm text-slate-600">
-              No {itemsPlural} match your search/filter.
+        {filter === 'teams' && showTeamsFilter ? (
+          teamFilter === null ? (
+            <div className="px-4 py-4 sm:px-6 sm:py-5">
+              <p className="mb-3 text-sm leading-relaxed text-slate-600">
+                Sections follow the album order. Tap one to see the{' '}
+                <span className="font-bold text-slate-800">missing</span> {itemsPlural} for that country
+                or group.
+              </p>
+              <div className="mx-auto max-h-[min(70vh,560px)] space-y-1.5 overflow-y-auto pr-1 [scrollbar-width:thin]">
+                {countryListFiltered.map((row) => (
+                  <button
+                    key={row.code}
+                    type="button"
+                    className="focus-ring w-full rounded-xl border-2 border-slate-200/90 bg-white/90 px-4 py-3 text-left text-sm font-semibold leading-snug text-slate-900 transition-[border-color,background-color,filter] duration-150 hover:border-[#00a99d]/45 hover:bg-white active:brightness-[0.98] sm:py-3.5 sm:text-[15px]"
+                    onClick={() => setTeamFilter(row.code)}
+                  >
+                    {row.listLabel}
+                  </button>
+                ))}
+              </div>
+              {countryListFiltered.length === 0 ? (
+                <div className="mt-4 text-sm text-slate-600">No sections match your search.</div>
+              ) : null}
             </div>
-          ) : null}
-        </div>
+          ) : (
+            <div className="p-4 sm:p-6">
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+                <Button variant="ghost" className="min-h-10 w-full px-3 text-sm sm:w-auto" onClick={() => setTeamFilter(null)}>
+                  ← All countries
+                </Button>
+                <div className="min-w-0 flex-1">
+                  <div className="text-base font-extrabold leading-snug text-slate-900 sm:text-lg">
+                    {wc2026RowForCode(teamFilter)?.listLabel ?? teamFilter}
+                  </div>
+                  <div className="mt-0.5 text-xs font-bold uppercase tracking-wide text-slate-500">
+                    Missing {itemsPlural} only
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-7 gap-2 sm:gap-2.5">
+                {filtered.map((item) => (
+                  <StickerGridCell
+                    key={item.id}
+                    id={item.id}
+                    label={item.label}
+                    count={item.count}
+                    onCellClick={onCellClick}
+                    onCellPointerDown={onCellPointerDown}
+                    onCellPointerEnd={onCellPointerEnd}
+                  />
+                ))}
+              </div>
+              {filtered.length === 0 ? (
+                <div className="mt-6 text-sm text-slate-600">
+                  No missing {itemsPlural} in this section{search.trim() ? ' for your search' : ''}.
+                </div>
+              ) : null}
+            </div>
+          )
+        ) : (
+          <div className="p-4 sm:p-6">
+            <div className="grid grid-cols-7 gap-2 sm:gap-2.5">
+              {filtered.map((item) => (
+                <StickerGridCell
+                  key={item.id}
+                  id={item.id}
+                  label={item.label}
+                  count={item.count}
+                  onCellClick={onCellClick}
+                  onCellPointerDown={onCellPointerDown}
+                  onCellPointerEnd={onCellPointerEnd}
+                />
+              ))}
+            </div>
+
+            {filtered.length === 0 ? (
+              <div className="mt-6 text-sm text-slate-600">
+                No {itemsPlural} match your search/filter.
+              </div>
+            ) : null}
+          </div>
+        )}
       </Card>
 
       {clearDialogOpen ? (

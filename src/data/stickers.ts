@@ -1,5 +1,5 @@
 /** Album order: 20 stickers per section — FWC then 48 nations (49×20 = 980). */
-const TEAMS = [
+export const WC_2026_TEAM_CODES = [
   'FWC',
   'MEX',
   'RSA',
@@ -51,6 +51,8 @@ const TEAMS = [
   'PAN',
 ] as const;
 
-export const STICKERS = TEAMS.flatMap((code) =>
+export type Wc2026TeamCode = (typeof WC_2026_TEAM_CODES)[number];
+
+export const STICKERS = WC_2026_TEAM_CODES.flatMap((code) =>
   Array.from({ length: 20 }, (_, i) => `${code} ${i + 1}`),
 );
