@@ -1,4 +1,4 @@
-/** Album order: 20 stickers per team code (FWC first, then national teams). */
+/** Album order: 20 stickers per section — FWC then 48 nations (49×20 = 980). */
 const TEAMS = [
   'FWC',
   'MEX',
