@@ -40,17 +40,24 @@ const StickerGridCell = memo(function StickerGridCell({
         : 'border-[#2563eb] bg-[#bfdbfe] text-slate-900 shadow-[0_3px_12px_rgba(37,99,235,0.22)]';
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
+      title="Click: +1 • Hold: -1 • Right-click disabled"
+      aria-label={`${label}, count ${count}. Tap to add one, long press to remove one.`}
       onClick={() => onCellClick(id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onCellClick(id);
+        }
+      }}
       onPointerDown={() => onCellPointerDown(id)}
       onPointerUp={() => onCellPointerEnd(id)}
       onPointerCancel={() => onCellPointerEnd(id)}
       onPointerLeave={() => onCellPointerEnd(id)}
       onContextMenu={(e) => e.preventDefault()}
-      title="Click: +1 • Hold: -1 • Right-click disabled"
-      style={{ contentVisibility: 'auto', containIntrinsicSize: '56px 56px' }}
-      className={`focus-ring relative flex min-h-14 touch-manipulation select-none items-center justify-center rounded-xl border-2 text-xs font-extrabold leading-tight tracking-tight shadow-sm transition-[filter,box-shadow] duration-75 active:brightness-[0.94] sm:h-14 sm:text-sm ${tone}`}
+      className={`focus-ring relative flex min-h-14 cursor-pointer touch-manipulation select-none items-center justify-center rounded-xl border-2 text-xs font-extrabold leading-tight tracking-tight shadow-sm transition-[filter,box-shadow] duration-75 active:brightness-[0.94] sm:h-14 sm:text-sm ${tone}`}
     >
       <div className="min-w-0 max-w-full px-1.5 text-center opacity-95 sm:px-2">{label}</div>
       {count > 1 ? (
@@ -61,7 +68,7 @@ const StickerGridCell = memo(function StickerGridCell({
           {count - 1}
         </span>
       ) : null}
-    </button>
+    </div>
   );
 });
 
@@ -239,7 +246,7 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
           ← Albums
         </Button>
       </div>
-      <Card className="overflow-hidden">
+      <Card className="overflow-clip">
         <CardHeader
           title={album?.fullName ?? 'Sticker Tracker'}
           subtitle={headerSubtitle}

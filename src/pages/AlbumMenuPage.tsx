@@ -48,7 +48,7 @@ export default function AlbumMenuPage({ onSelectAlbum }: { onSelectAlbum: (album
         <p className="mt-2 text-sm text-slate-600 sm:text-base">Choose an album to track your collection.</p>
       </div>
 
-      <Card className="overflow-hidden">
+      <Card className="overflow-clip">
         <div className="px-4 pb-2 pt-4 sm:px-6 sm:pb-3 sm:pt-6">
           <div className="mb-3 h-1 w-14 rounded-full bg-gradient-to-r from-[#e30613] via-[#ffd700] to-[#2563eb]" />
           <h2 className="text-lg font-extrabold text-slate-900 sm:text-xl">Albums</h2>
