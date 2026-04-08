@@ -6,9 +6,23 @@ import { loadSelectedAlbumId } from '../lib/albumSelection';
 import { shareText } from '../lib/share';
 import { loadStickerRows, persistStickerRows, type StickerRow } from '../lib/stickerStorage';
 
-type Filter = 'all' | 'missing' | 'owned' | 'duplicates';
+type Filter = 'all' | 'missing' | 'owned' | 'duplicates' | 'teams';
 
 const LONG_PRESS_MS = 420;
+
+/** Labels like `BRA 12` / `FWC 5` (team or section code + number). */
+function teamCodeFromLabel(label: string): string | null {
+  const m = /^([A-Z]{2,4}) (\d+)$/.exec(label.trim());
+  return m ? m[1] : null;
+}
+
+function sortTeamCodes(codes: string[]): string[] {
+  return [...codes].sort((a, b) => {
+    if (a === 'FWC') return -1;
+    if (b === 'FWC') return 1;
+    return a.localeCompare(b);
+  });
+}
 
 const StickerGridCell = memo(function StickerGridCell({
   id,
@@ -68,6 +82,7 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
   const [stickers, setStickers] = useState<StickerRow[]>(() => loadStickerRows(loadSelectedAlbumId()));
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
+  const [teamFilter, setTeamFilter] = useState<string | null>(null);
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
 
   const saveTimer = useRef<number | null>(null);
@@ -103,17 +118,31 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
     () => stickers.reduce((sum, s) => sum + Math.max(0, s.count - 1), 0),
     [stickers],
   );
+
+  const teamCodes = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of stickers) {
+      const code = teamCodeFromLabel(s.label);
+      if (code) set.add(code);
+    }
+    return sortTeamCodes(Array.from(set));
+  }, [stickers]);
+
+  const showTeamsFilter = teamCodes.length >= 2;
+
   const filtered = useMemo(() => {
     const searchText = search.trim().toLowerCase();
     return stickers.filter((s) => {
       const label = (s.label || '').toLowerCase();
       if (searchText && !label.includes(searchText)) return false;
-      if (filter === 'missing') return s.count === 0;
-      if (filter === 'owned') return s.count >= 1;
-      if (filter === 'duplicates') return s.count > 1;
+      if (filter === 'teams') {
+        if (teamFilter !== null && teamCodeFromLabel(s.label) !== teamFilter) return false;
+      } else if (filter === 'missing') return s.count === 0;
+      else if (filter === 'owned') return s.count >= 1;
+      else if (filter === 'duplicates') return s.count > 1;
       return true;
     });
-  }, [stickers, search, filter]);
+  }, [stickers, search, filter, teamFilter]);
 
   const bumpCount = useCallback((id: number, delta: 1 | -1) => {
     setStickers((prev) => {
@@ -269,13 +298,54 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
                     key={f}
                     active={filter === f}
                     tone={f === 'duplicates' ? 'blue' : 'default'}
-                    onClick={() => setFilter(f)}
+                    onClick={() => {
+                      setFilter(f);
+                      setTeamFilter(null);
+                    }}
                   >
                     {label}
                   </Pill>
                 );
               })}
+              {showTeamsFilter ? (
+                <Pill
+                  active={filter === 'teams'}
+                  tone="default"
+                  onClick={() => setFilter('teams')}
+                  className="col-span-2 sm:col-span-1"
+                >
+                  By country
+                </Pill>
+              ) : null}
             </div>
+            {filter === 'teams' && showTeamsFilter ? (
+              <div className="mt-4">
+                <div className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Country / section
+                </div>
+                <div className="-mx-1 flex max-w-full gap-1.5 overflow-x-auto px-1 pb-1 pt-0.5 [scrollbar-width:thin]">
+                  <Pill
+                    active={teamFilter === null}
+                    tone="default"
+                    onClick={() => setTeamFilter(null)}
+                    className="w-auto shrink-0 px-3"
+                  >
+                    All
+                  </Pill>
+                  {teamCodes.map((code) => (
+                    <Pill
+                      key={code}
+                      active={teamFilter === code}
+                      tone="default"
+                      onClick={() => setTeamFilter(code)}
+                      className="w-auto shrink-0 px-3 font-mono text-xs"
+                    >
+                      {code}
+                    </Pill>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
 
