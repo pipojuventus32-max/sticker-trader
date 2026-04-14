@@ -1,4 +1,4 @@
-/** Menu + validation only — keeps the first paint bundle small (no full label lists). */
+/** Menu + validation — single album (FIFA World Cup 2026 Panini stickers, 980 slots). */
 
 export type AlbumBackground = 'default';
 
@@ -16,7 +16,6 @@ export type AlbumMenuDefinition = {
 };
 
 const STICKER: ItemLabels = { singular: 'sticker', plural: 'stickers' };
-const CARD: ItemLabels = { singular: 'card', plural: 'cards' };
 
 export const ALBUM_MENU: readonly AlbumMenuDefinition[] = [
   {
@@ -26,33 +25,6 @@ export const ALBUM_MENU: readonly AlbumMenuDefinition[] = [
     slotCount: 980,
     background: 'default',
     searchPlaceholder: 'Try: FWC 1, BRA 20…',
-    itemLabels: STICKER,
-  },
-  {
-    id: 'adrenalyn-xl-2026',
-    shortName: 'WC 2026 Adrenalyn XL',
-    fullName: 'FIFA WORLD CUP 2026™ ADRENALYN XL™',
-    slotCount: 630,
-    background: 'default',
-    searchPlaceholder: 'Try: 1, 630, 42…',
-    itemLabels: CARD,
-  },
-  {
-    id: 'fifa-365-2026',
-    shortName: 'FIFA 365 2026',
-    fullName: 'FIFA 365 2026',
-    slotCount: 612,
-    background: 'default',
-    searchPlaceholder: 'Try: 1, 524, B1, B88…',
-    itemLabels: STICKER,
-  },
-  {
-    id: 'euroleague-2025-26',
-    shortName: 'EuroLeague 2025-26',
-    fullName: 'EuroLeague 2025-26',
-    slotCount: 424,
-    background: 'default',
-    searchPlaceholder: 'Try: 1, 424…',
     itemLabels: STICKER,
   },
 ] as const;

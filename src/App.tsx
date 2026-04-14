@@ -1,7 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
-
-import AlbumMenuPage from './pages/AlbumMenuPage';
-import { persistSelectedAlbumId } from './lib/albumSelection';
+import { lazy, Suspense } from 'react';
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 
@@ -15,27 +12,16 @@ function TrackerFallback() {
         aria-busy="true"
       >
         <div className="mx-auto h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-t-[#00a99d]" />
-        <p className="mt-4 text-sm font-bold text-slate-700">Loading album…</p>
+        <p className="mt-4 text-sm font-bold text-slate-700">Loading…</p>
       </div>
     </div>
   );
 }
 
 export default function App() {
-  const [screen, setScreen] = useState<'menu' | 'tracker'>('menu');
-
-  const handleSelectAlbum = (albumId: string) => {
-    persistSelectedAlbumId(albumId);
-    setScreen('tracker');
-  };
-
-  if (screen === 'menu') {
-    return <AlbumMenuPage onSelectAlbum={handleSelectAlbum} />;
-  }
-
   return (
     <Suspense fallback={<TrackerFallback />}>
-      <DashboardPage onOpenAlbumMenu={() => setScreen('menu')} />
+      <DashboardPage />
     </Suspense>
   );
 }

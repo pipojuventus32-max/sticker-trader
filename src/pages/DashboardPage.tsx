@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 
 import { Button, Card, CardHeader, Container, Divider, Input, Pill } from '../components/ui';
 import { getAlbumById } from '../data/albums';
+import { WC_2026_TEAM_CODES } from '../data/stickers';
 import { WC_2026_COUNTRY_ROWS, wc2026RowForCode } from '../data/wc2026CountryLabels';
 import { loadSelectedAlbumId } from '../lib/albumSelection';
 import { shareText } from '../lib/share';
@@ -11,10 +12,49 @@ type Filter = 'all' | 'missing' | 'owned' | 'duplicates' | 'teams';
 
 const LONG_PRESS_MS = 420;
 
+/** Strip ZWSP/BOM etc. and fullwidth digits so `SUI 1` always parses like `SUI 2`. */
+function sanitizeWcStickerLabel(raw: string): string {
+  return raw
+    .trim()
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .normalize('NFKC')
+    .replace(/[\uFF10-\uFF19]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xff10 + 0x30));
+}
+
 /** Labels like `BRA 12` / `FWC 5` (team or section code + number). */
+function parseWcStyleStickerLabel(label: string): { code: string; num: string } | null {
+  const t = sanitizeWcStickerLabel(label);
+  const m = /^([A-Za-z]{2,4})\s+(\d+)$/.exec(t);
+  return m ? { code: m[1].toUpperCase(), num: m[2] } : null;
+}
+
 function teamCodeFromLabel(label: string): string | null {
-  const m = /^([A-Z]{2,4}) (\d+)$/.exec(label.trim());
-  return m ? m[1] : null;
+  return parseWcStyleStickerLabel(label)?.code ?? null;
+}
+
+/** Grid text from slot id + official team order (same as `STICKERS` catalog) — never parse `label` for layout. */
+const WC_2026_SLOTS_PER_TEAM = 20;
+const WC_2026_TOTAL_SLOTS = WC_2026_TEAM_CODES.length * WC_2026_SLOTS_PER_TEAM;
+
+function wc2026DisplayFromSlotId(slotId: number): { line1: string; line2: string } | null {
+  const i = slotId - 1;
+  if (i < 0 || i >= WC_2026_TOTAL_SLOTS) return null;
+  return {
+    line1: WC_2026_TEAM_CODES[Math.floor(i / WC_2026_SLOTS_PER_TEAM)]!,
+    line2: String((i % WC_2026_SLOTS_PER_TEAM) + 1),
+  };
+}
+
+/** Fallback if slot id is ever out of sync with the catalog. */
+function splitWc2026GridLabel(label: string): { line1: string; line2: string } | null {
+  const t = sanitizeWcStickerLabel(label);
+  const strict = parseWcStyleStickerLabel(t);
+  if (strict) return { line1: strict.code, line2: strict.num };
+  const glued = /^([A-Za-z]{2,4})(\d+)$/.exec(t);
+  if (glued) return { line1: glued[1].toUpperCase(), line2: glued[2] };
+  const loose = /^([A-Za-z]{2,4})\s+(.+)$/u.exec(t);
+  if (loose) return { line1: loose[1].toUpperCase(), line2: loose[2].trim() };
+  return null;
 }
 
 const StickerGridCell = memo(function StickerGridCell({
@@ -32,6 +72,8 @@ const StickerGridCell = memo(function StickerGridCell({
   onCellPointerDown: (id: number) => void;
   onCellPointerEnd: (id: number) => void;
 }) {
+  const wcLines = wc2026DisplayFromSlotId(id) ?? splitWc2026GridLabel(label);
+
   const tone =
     count === 0
       ? 'border-slate-300 bg-slate-100 text-slate-700'
@@ -57,9 +99,25 @@ const StickerGridCell = memo(function StickerGridCell({
       onPointerCancel={() => onCellPointerEnd(id)}
       onPointerLeave={() => onCellPointerEnd(id)}
       onContextMenu={(e) => e.preventDefault()}
-      className={`focus-ring relative flex min-h-14 cursor-pointer touch-manipulation select-none items-center justify-center rounded-xl border-2 text-xs font-extrabold leading-tight tracking-tight shadow-sm transition-[filter,box-shadow] duration-75 active:brightness-[0.94] sm:h-14 sm:text-sm ${tone}`}
+      className={`focus-ring relative flex min-h-14 cursor-pointer touch-manipulation select-none items-stretch rounded-xl border-2 py-1 text-xs font-extrabold leading-tight tracking-tight shadow-sm transition-[filter,box-shadow] duration-75 active:brightness-[0.94] sm:h-14 sm:text-sm ${tone}`}
     >
-      <div className="min-w-0 max-w-full px-1.5 text-center opacity-95 sm:px-2">{label}</div>
+      {wcLines ? (
+        <div
+          className="grid min-h-[2.55rem] w-full flex-1 grid-cols-1 grid-rows-2 items-center justify-items-center gap-y-1 px-0.5 py-0.5 text-center opacity-95 sm:min-h-0 sm:gap-y-1 sm:px-1"
+          style={{ gridTemplateRows: 'minmax(0,1fr) minmax(0,1fr)' }}
+        >
+          <span className="col-start-1 row-start-1 block w-full max-w-full text-[0.62rem] leading-tight sm:text-sm">
+            {wcLines.line1}
+          </span>
+          <span className="col-start-1 row-start-2 block w-full max-w-full min-h-[0.7em] text-[0.62rem] leading-tight tabular-nums sm:min-h-0 sm:text-sm">
+            {wcLines.line2}
+          </span>
+        </div>
+      ) : (
+        <div className="flex min-w-0 max-w-full flex-1 items-center justify-center px-1.5 text-center opacity-95 sm:px-2">
+          <span className="block break-words text-xs sm:text-sm">{label}</span>
+        </div>
+      )}
       {count > 1 ? (
         <span
           className="pointer-events-none absolute right-0.5 top-0.5 z-10 flex min-h-3 min-w-3 items-center justify-center rounded border border-[#e30613] bg-[#ffd700] px-0.5 py-px text-[7px] font-extrabold leading-none tabular-nums text-slate-900 sm:right-1 sm:top-1 sm:min-h-3.5 sm:min-w-3.5 sm:text-[8px]"
@@ -77,7 +135,7 @@ function percent(n: number) {
   return Math.max(0, Math.min(100, Math.floor(n)));
 }
 
-export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: () => void }) {
+export default function DashboardPage() {
   const [albumId] = useState(() => loadSelectedAlbumId());
   const [stickers, setStickers] = useState<StickerRow[]>(() => loadStickerRows(loadSelectedAlbumId()));
   const [search, setSearch] = useState('');
@@ -118,8 +176,6 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
     () => stickers.reduce((sum, s) => sum + Math.max(0, s.count - 1), 0),
     [stickers],
   );
-
-  const showTeamsFilter = albumId === 'panini-wc-stickers-2026';
 
   const countryListFiltered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -241,11 +297,6 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
 
   return (
     <Container>
-      <div className="mb-3 flex justify-start sm:mb-4">
-        <Button variant="ghost" className="min-h-10 px-3 text-sm" onClick={onOpenAlbumMenu}>
-          ← Albums
-        </Button>
-      </div>
       <Card className="overflow-clip">
         <CardHeader
           title={album?.fullName ?? 'Sticker Tracker'}
@@ -313,28 +364,26 @@ export default function DashboardPage({ onOpenAlbumMenu }: { onOpenAlbumMenu: ()
                   );
                 })}
               </div>
-              {showTeamsFilter ? (
-                <div className="flex w-full justify-stretch border-t border-slate-200 pt-3 sm:w-auto sm:shrink-0 sm:justify-end sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0 md:pl-5">
-                  <Pill
-                    active={filter === 'teams'}
-                    tone="default"
-                    onClick={() => {
-                      setFilter('teams');
-                      setTeamFilter(null);
-                    }}
-                    className="sm:min-w-[8.5rem]"
-                  >
-                    By country
-                  </Pill>
-                </div>
-              ) : null}
+              <div className="flex w-full justify-stretch border-t border-slate-200 pt-3 sm:w-auto sm:shrink-0 sm:justify-end sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0 md:pl-5">
+                <Pill
+                  active={filter === 'teams'}
+                  tone="default"
+                  onClick={() => {
+                    setFilter('teams');
+                    setTeamFilter(null);
+                  }}
+                  className="sm:min-w-[8.5rem]"
+                >
+                  By country
+                </Pill>
+              </div>
             </div>
           </div>
         </div>
 
         <Divider />
 
-        {filter === 'teams' && showTeamsFilter ? (
+        {filter === 'teams' ? (
           teamFilter === null ? (
             <div className="px-4 pb-20 pt-4 sm:px-6 sm:pb-5 sm:pt-5">
               <p className="mb-3 text-sm leading-relaxed text-slate-600">
