@@ -1,4 +1,7 @@
-/** Album order: 20 stickers per section — FWC then 48 nations (49×20 = 980). */
+/**
+ * Album order: 20 stickers per section — FWC then 48 nations (49×20 = 980).
+ * FWC row: first slot is `00`, then `FWC 1` … `FWC 19`; other sections stay `CODE 1` … `CODE 20`.
+ */
 export const WC_2026_TEAM_CODES = [
   'FWC',
   'MEX',
@@ -53,6 +56,11 @@ export const WC_2026_TEAM_CODES = [
 
 export type Wc2026TeamCode = (typeof WC_2026_TEAM_CODES)[number];
 
-export const STICKERS = WC_2026_TEAM_CODES.flatMap((code) =>
-  Array.from({ length: 20 }, (_, i) => `${code} ${i + 1}`),
-);
+function labelsForTeam(code: string): string[] {
+  if (code === 'FWC') {
+    return ['00', ...Array.from({ length: 19 }, (_, i) => `FWC ${i + 1}`)];
+  }
+  return Array.from({ length: 20 }, (_, i) => `${code} ${i + 1}`);
+}
+
+export const STICKERS = WC_2026_TEAM_CODES.flatMap((code) => labelsForTeam(code));

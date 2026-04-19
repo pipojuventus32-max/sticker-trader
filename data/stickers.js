@@ -50,6 +50,11 @@ const TEAMS = [
   'PAN',
 ];
 
-export const STICKERS = TEAMS.flatMap((code) =>
-  Array.from({ length: 20 }, (_, i) => `${code} ${i + 1}`),
-);
+function labelsForTeam(code) {
+  if (code === 'FWC') {
+    return ['00', ...Array.from({ length: 19 }, (_, i) => `FWC ${i + 1}`)];
+  }
+  return Array.from({ length: 20 }, (_, i) => `${code} ${i + 1}`);
+}
+
+export const STICKERS = TEAMS.flatMap((code) => labelsForTeam(code));

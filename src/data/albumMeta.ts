@@ -24,7 +24,7 @@ export const ALBUM_MENU: readonly AlbumMenuDefinition[] = [
     fullName: 'FIFA WORLD CUP 2026™ Official Sticker Collection',
     slotCount: 980,
     background: 'default',
-    searchPlaceholder: 'Try: FWC 1, BRA 20…',
+    searchPlaceholder: 'Try: 00, FWC 1, BRA 20…',
     itemLabels: STICKER,
   },
 ] as const;

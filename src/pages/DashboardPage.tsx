@@ -29,6 +29,8 @@ function parseWcStyleStickerLabel(label: string): { code: string; num: string } 
 }
 
 function teamCodeFromLabel(label: string): string | null {
+  const t = sanitizeWcStickerLabel(label);
+  if (t === '00') return 'FWC';
   return parseWcStyleStickerLabel(label)?.code ?? null;
 }
 
@@ -39,6 +41,8 @@ const WC_2026_TOTAL_SLOTS = WC_2026_TEAM_CODES.length * WC_2026_SLOTS_PER_TEAM;
 function wc2026DisplayFromSlotId(slotId: number): { line1: string; line2: string } | null {
   const i = slotId - 1;
   if (i < 0 || i >= WC_2026_TOTAL_SLOTS) return null;
+  if (slotId === 1) return { line1: '00', line2: '' };
+  if (slotId >= 2 && slotId <= 20) return { line1: 'FWC', line2: String(slotId - 1) };
   return {
     line1: WC_2026_TEAM_CODES[Math.floor(i / WC_2026_SLOTS_PER_TEAM)]!,
     line2: String((i % WC_2026_SLOTS_PER_TEAM) + 1),
@@ -102,17 +106,23 @@ const StickerGridCell = memo(function StickerGridCell({
       className={`focus-ring relative flex min-h-14 cursor-pointer touch-manipulation select-none items-stretch rounded-xl border-2 py-1 text-xs font-extrabold leading-tight tracking-tight shadow-sm transition-[filter,box-shadow] duration-75 active:brightness-[0.94] sm:h-14 sm:text-sm ${tone}`}
     >
       {wcLines ? (
-        <div
-          className="grid min-h-[2.55rem] w-full flex-1 grid-cols-1 grid-rows-2 items-center justify-items-center gap-y-1 px-0.5 py-0.5 text-center opacity-95 sm:min-h-0 sm:gap-y-1 sm:px-1"
-          style={{ gridTemplateRows: 'minmax(0,1fr) minmax(0,1fr)' }}
-        >
-          <span className="col-start-1 row-start-1 block w-full max-w-full text-[0.62rem] leading-tight sm:text-sm">
+        wcLines.line2 === '' ? (
+          <div className="flex min-h-[2.55rem] w-full flex-1 items-center justify-center px-0.5 py-0.5 text-center text-[0.62rem] font-extrabold leading-tight opacity-95 tabular-nums sm:min-h-0 sm:text-sm">
             {wcLines.line1}
-          </span>
-          <span className="col-start-1 row-start-2 block w-full max-w-full min-h-[0.7em] text-[0.62rem] leading-tight tabular-nums sm:min-h-0 sm:text-sm">
-            {wcLines.line2}
-          </span>
-        </div>
+          </div>
+        ) : (
+          <div
+            className="grid min-h-[2.55rem] w-full flex-1 grid-cols-1 grid-rows-2 items-center justify-items-center gap-y-1 px-0.5 py-0.5 text-center opacity-95 sm:min-h-0 sm:gap-y-1 sm:px-1"
+            style={{ gridTemplateRows: 'minmax(0,1fr) minmax(0,1fr)' }}
+          >
+            <span className="col-start-1 row-start-1 block w-full max-w-full text-[0.62rem] leading-tight sm:text-sm">
+              {wcLines.line1}
+            </span>
+            <span className="col-start-1 row-start-2 block w-full max-w-full min-h-[0.7em] text-[0.62rem] leading-tight tabular-nums sm:min-h-0 sm:text-sm">
+              {wcLines.line2}
+            </span>
+          </div>
+        )
       ) : (
         <div className="flex min-w-0 max-w-full flex-1 items-center justify-center px-1.5 text-center opacity-95 sm:px-2">
           <span className="block break-words text-xs sm:text-sm">{label}</span>
