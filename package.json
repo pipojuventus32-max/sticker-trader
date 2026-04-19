@@ -1,6 +1,9 @@
 {
   "name": "sticker-tracker",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
