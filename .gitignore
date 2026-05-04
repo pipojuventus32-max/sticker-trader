@@ -3,6 +3,9 @@
 # dependencies
 node_modules/
 
+# Vercel CLI / linked project (do not commit tokens)
+.vercel
+
 # Expo
 .expo/
 dist/

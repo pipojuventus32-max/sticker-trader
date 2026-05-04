@@ -264,10 +264,26 @@ export default function DashboardPage() {
     [bumpCount],
   );
 
-  const confirmClearAll = () => {
-    const reset = stickers.map((s) => ({ ...s, count: 0 }));
-    setStickers(reset);
-    persistStickerRows(albumId, reset);
+  /** Clear / trim only stickers currently shown in the grid (active tab + search + country drill-down). */
+  const filteredIds = useMemo(() => new Set(filtered.map((s) => s.id)), [filtered]);
+
+  const clearScopeDisabled = useMemo(() => {
+    if (filter === 'missing' || filter === 'teams') return true;
+    if (filtered.length === 0) return true;
+    if (filter === 'duplicates') return !filtered.some((s) => s.count > 1);
+    if (filter === 'owned') return !filtered.some((s) => s.count >= 1);
+    return !filtered.some((s) => s.count > 0);
+  }, [filter, filtered]);
+
+  const confirmClear = () => {
+    const next = stickers.map((s) => {
+      if (!filteredIds.has(s.id)) return s;
+      if (filter === 'duplicates') return s.count > 1 ? { ...s, count: 1 } : s;
+      if (filter === 'owned') return s.count >= 1 ? { ...s, count: 0 } : s;
+      return { ...s, count: 0 };
+    });
+    setStickers(next);
+    persistStickerRows(albumId, next);
     setClearDialogOpen(false);
   };
 
@@ -347,8 +363,18 @@ export default function DashboardPage() {
             >
               Share Doubles
             </Button>
-            <Button className="w-full sm:w-auto" onClick={() => setClearDialogOpen(true)}>
-              Clear All
+            <Button
+              className="w-full sm:w-auto"
+              onClick={() => setClearDialogOpen(true)}
+              disabled={clearScopeDisabled}
+            >
+              {filter === 'duplicates'
+                ? 'Clear doubles'
+                : filter === 'owned'
+                  ? 'Clear collected'
+                  : search.trim()
+                    ? 'Clear shown'
+                    : 'Clear all'}
             </Button>
           </div>
 
@@ -491,17 +517,37 @@ export default function DashboardPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 id="clear-dialog-title" className="text-lg font-extrabold text-slate-900">
-              Clear all counts?
+              {filter === 'duplicates'
+                ? 'Remove doubles for this view?'
+                : filter === 'owned'
+                  ? 'Clear collected stickers in this view?'
+                  : search.trim()
+                    ? 'Clear counts for stickers shown?'
+                    : 'Clear all counts?'}
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">
-              This resets every {itemsSingular} to zero. You can&apos;t undo this from the app.
+              {filter === 'duplicates'
+                ? `Applies only to ${itemsPlural} visible below${search.trim() ? ' that match your search' : ''}: extras are removed and you keep one of each slot; everything else stays the same. You can&apos;t undo this from the app.`
+                : filter === 'owned'
+                  ? search.trim()
+                    ? `Only collected ${itemsPlural} visible below are reset to missing (zero). Others stay unchanged. You can&apos;t undo this from the app.`
+                    : `Every ${itemsSingular} you have at least one copy of is reset to missing (zero). You can&apos;t undo this from the app.`
+                  : search.trim()
+                    ? `Counts go to zero only for ${itemsPlural} matching your search (the grid below). All others stay unchanged. You can&apos;t undo this from the app.`
+                    : `This resets every ${itemsSingular} to zero. You can&apos;t undo this from the app.`}
             </p>
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
               <Button variant="ghost" className="w-full sm:w-auto" onClick={() => setClearDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button variant="danger" className="w-full sm:w-auto" onClick={confirmClearAll}>
-                Clear all
+              <Button variant="danger" className="w-full sm:w-auto" onClick={confirmClear}>
+                {filter === 'duplicates'
+                  ? 'Remove doubles'
+                  : filter === 'owned'
+                    ? 'Clear collected'
+                    : search.trim()
+                      ? 'Clear shown'
+                      : 'Clear all'}
               </Button>
             </div>
           </div>

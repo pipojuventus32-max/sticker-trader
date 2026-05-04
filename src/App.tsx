@@ -1,3 +1,5 @@
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { lazy, Suspense } from 'react';
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
@@ -20,8 +22,16 @@ function TrackerFallback() {
 
 export default function App() {
   return (
-    <Suspense fallback={<TrackerFallback />}>
-      <DashboardPage />
-    </Suspense>
+    <>
+      <Suspense fallback={<TrackerFallback />}>
+        <DashboardPage />
+      </Suspense>
+      {import.meta.env.PROD ? (
+        <>
+          <Analytics />
+          <SpeedInsights />
+        </>
+      ) : null}
+    </>
   );
 }
